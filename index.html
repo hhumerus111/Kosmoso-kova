@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kosmoso Kova - F16 prieš Ateivius</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a0322">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kosmoso Kova">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; user-select:none; }
+  html,body {
+    height:100%; overflow:hidden;
+    background:#000;
+    font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+    touch-action:none;
+  }
+  #wrap {
+    position:relative;
+    width:100vw; height:100vh;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #game {
+    position:relative;
+    width:100%; height:100%;
+    max-width:520px;
+    max-height:900px;
+    background:#000;
+    box-shadow: 0 0 60px rgba(138,43,226,0.35);
+    overflow:hidden;
+  }
+  canvas { display:block; width:100%; height:100%; touch-action:none; }
+
+  #soundBtn {
+    position:absolute;
+    top:12px; right:14px;
+    width:38px; height:38px;
+    border-radius:50%;
+    border:1.5px solid rgba(200,160,255,0.7);
+    background:rgba(30,10,55,0.6);
+    color:#fff;
+    font-size:17px;
+    display:flex; align-items:center; justify-content:center;
+    z-index:15;
+    cursor:pointer;
+  }
+  #soundBtn.muted { opacity:0.55; }
+
+  #hud {
+    position:absolute; top:0; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:14px 16px;
+    pointer-events:none;
+    font-weight:bold;
+    text-shadow: 0 0 8px rgba(0,0,0,0.9);
+  }
+  .hudLeft { display:flex; flex-direction:column; gap:4px; }
+  #score {
+    color:#7CFC00;
+    font-size:20px;
+    letter-spacing:1px;
+  }
+  #money {
+    color:#ffd76a;
+    font-size:15px;
+    letter-spacing:0.5px;
+  }
+  #levelInfo {
+    color:#7ef9ff;
+    font-size:13px;
+    letter-spacing:0.5px;
+  }
+  #lives {
+    font-size:22px;
+    text-align:right;
+    color:#ff4d6d;
+  }
+
+  #overlay {
+    position:absolute; inset:0;
+    display:none;
+    flex-direction:column;
+    align-items:center; justify-content:center;
+    background:rgba(5,0,15,0.86);
+    text-align:center;
+    gap:18px;
+    z-index:20;
+  }
+  #overlay h1 {
+    font-size:44px;
+    letter-spacing:2px;
+  }
+  #overlay .win-title { color:#FFD700; text-shadow:0 0 25px #FFD700, 0 0 50px #ffae00; }
+  #overlay .lose-title { color:#ff3b3b; text-shadow:0 0 25px #ff3b3b; }
+  #overlay .sub { color:#c9b8ff; font-size:18px; max-width:80%; }
+  #trophy { font-size:90px; filter:drop-shadow(0 0 20px #FFD700); animation:bob 1.4s ease-in-out infinite; }
+  @keyframes bob { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-14px);} }
+
+  #restartBtn {
+    padding:14px 34px;
+    font-size:20px;
+    font-weight:bold;
+    color:#fff;
+    background:linear-gradient(180deg,#9b30ff,#5b0fb0);
+    border:2px solid #c9a2ff;
+    border-radius:14px;
+    box-shadow:0 0 20px rgba(155,48,255,0.7);
+    cursor:pointer;
+  }
+  #restartBtn:active { transform:scale(0.96); }
+
+  #controls {
+    position:absolute; bottom:0; left:0; right:0;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 20px 26px;
+    z-index:10;
+  }
+  .movebtns { display:flex; gap:14px; }
+  .ctrlbtn {
+    width:72px; height:72px;
+    border-radius:50%;
+    border:2px solid rgba(200,160,255,0.8);
+    background:radial-gradient(circle at 35% 30%, #4b1a8c, #1a0533);
+    color:#fff;
+    font-size:30px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 14px rgba(155,48,255,0.6);
+  }
+  .ctrlbtn:active { background:radial-gradient(circle at 35% 30%, #7b2fd6, #2a0a4c); }
+
+  #shootBtn {
+    width:92px; height:92px;
+    border-radius:50%;
+    border:3px solid #ffd27a;
+    background:radial-gradient(circle at 35% 30%, #ff8a3d, #a8300a);
+    color:#fff;
+    font-size:16px;
+    font-weight:bold;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 20px rgba(255,140,50,0.75);
+    text-align:center;
+    line-height:1.1;
+  }
+  #shootBtn:active { background:radial-gradient(circle at 35% 30%, #ffb066, #c94010); }
+
+  #shopBtn {
+    border-color:#ffd76a;
+    box-shadow:0 0 14px rgba(255,215,100,0.6);
+    font-size:26px;
+  }
+  #shopBtn:active { background:radial-gradient(circle at 35% 30%, #a8790a, #3a2504); }
+
+  #abilityRow {
+    position:absolute;
+    bottom:112px;
+    left:0; right:0;
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    z-index:10;
+    pointer-events:none;
+  }
+  .abilityBtn {
+    pointer-events:auto;
+    width:58px; height:58px;
+    border-radius:50%;
+    font-size:24px;
+    color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  #shieldBtn {
+    border:2px solid #6ad4ff;
+    background:radial-gradient(circle at 35% 30%, #1a5c8c, #0a2438);
+    box-shadow:0 0 14px rgba(106,212,255,0.7);
+  }
+  #shieldBtn:active:not(:disabled) { background:radial-gradient(circle at 35% 30%, #2d84c4, #123a56); }
+  #superBtn {
+    border:2px solid #ff8a3d;
+    background:radial-gradient(circle at 35% 30%, #8c3a1a, #380f0a);
+    box-shadow:0 0 14px rgba(255,138,61,0.7);
+  }
+  #superBtn:active:not(:disabled) { background:radial-gradient(circle at 35% 30%, #c45a2d, #562012); }
+  .abilityBtn:disabled {
+    opacity:0.55;
+    font-size:16px;
+    font-weight:bold;
+  }
+
+  #shopOverlay {
+    position:absolute; inset:0;
+    display:none;
+    align-items:center; justify-content:center;
+    background:rgba(5,0,15,0.9);
+    z-index:30;
+    padding:20px;
+  }
+  #shopPanel {
+    width:100%;
+    max-width:400px;
+    max-height:82vh;
+    overflow-y:auto;
+    background:linear-gradient(180deg,#1a0a33,#0a0318);
+    border:2px solid #c9a2ff;
+    border-radius:18px;
+    box-shadow:0 0 30px rgba(155,48,255,0.5);
+    padding:20px;
+    text-align:center;
+  }
+  #shopPanel h2 {
+    color:#ffd76a;
+    font-size:20px;
+    margin-bottom:10px;
+    text-shadow:0 0 10px rgba(255,215,100,0.6);
+  }
+  #shopMoney {
+    color:#7CFC00;
+    font-weight:bold;
+    margin-bottom:14px;
+    font-size:16px;
+  }
+  .shopCard {
+    background:rgba(155,90,255,0.12);
+    border:1px solid rgba(200,160,255,0.5);
+    border-radius:10px;
+    padding:9px 12px;
+    margin-bottom:8px;
+    text-align:left;
+  }
+  .shopCard.owned { border-color:#7CFC00; background:rgba(124,252,0,0.08); }
+  .shopSectionTitle {
+    color:#ffd76a;
+    font-size:14px;
+    font-weight:bold;
+    text-align:left;
+    margin:10px 0 8px;
+    letter-spacing:1px;
+    opacity:0.9;
+  }
+  .shopCardTitle { color:#e9d5ff; font-weight:bold; font-size:14px; margin-bottom:3px; }
+  .shopCardDesc { color:#c9b8ff; font-size:12px; margin-bottom:6px; }
+  .shopCardCost { color:#ffd76a; font-weight:bold; font-size:13px; margin-bottom:6px; }
+  .shopBuyBtn {
+    width:100%;
+    padding:8px;
+    font-size:14px;
+    font-weight:bold;
+    color:#fff;
+    background:linear-gradient(180deg,#ffb84d,#c9720a);
+    border:2px solid #ffd76a;
+    border-radius:9px;
+    cursor:pointer;
+  }
+  .shopBuyBtn:disabled {
+    background:linear-gradient(180deg,#555,#333);
+    border-color:#777;
+    color:#999;
+    cursor:not-allowed;
+  }
+  .shopBuyBtn:active:not(:disabled) { transform:scale(0.97); }
+  #shopCloseBtn {
+    margin-top:6px;
+    padding:12px 30px;
+    font-size:16px;
+    font-weight:bold;
+    color:#fff;
+    background:linear-gradient(180deg,#9b30ff,#5b0fb0);
+    border:2px solid #c9a2ff;
+    border-radius:14px;
+    cursor:pointer;
+  }
+
+  #bossbar {
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    width:60%; max-width:260px;
+    text-align:center;
+    color:#ffb3ff;
+    font-size:12px;
+    font-weight:bold;
+    pointer-events:none;
+    text-shadow:0 0 6px rgba(0,0,0,0.9);
+  }
+  #bossbarOuter {
+    width:100%; height:10px;
+    border:1px solid #c9a2ff;
+    border-radius:6px;
+    background:rgba(60,10,90,0.6);
+    overflow:hidden;
+    margin-top:3px;
+  }
+  #bossbarInner {
+    height:100%;
+    width:100%;
+    background:linear-gradient(90deg,#ff3bd0,#9b30ff);
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="game">
+    <canvas id="c"></canvas>
+
+    <button id="soundBtn">🔊</button>
+
+    <div id="hud">
+      <div class="hudLeft">
+        <div id="score">TAŠKAI: 0</div>
+        <div id="money">💰 PINIGAI: 0</div>
+        <div id="levelInfo">LYGIS 1 / 20</div>
+      </div>
+      <div id="lives">❤️❤️❤️❤️❤️</div>
+    </div>
+
+    <div id="bossbar">
+      DIDYSIS ATEIVIS
+      <div id="bossbarOuter"><div id="bossbarInner"></div></div>
+    </div>
+
+    <div id="overlay">
+      <div id="trophy" style="display:none;">🏆</div>
+      <h1 id="overlayTitle"></h1>
+      <div class="sub" id="overlaySub"></div>
+      <button id="restartBtn">Žaisti iš naujo</button>
+    </div>
+
+    <div id="abilityRow">
+      <button class="abilityBtn" id="shieldBtn" style="display:none;">🛡️</button>
+      <button class="abilityBtn" id="superBtn" style="display:none;">💥</button>
+    </div>
+
+    <div id="controls">
+      <div class="movebtns">
+        <button class="ctrlbtn" id="leftBtn">◀</button>
+        <button class="ctrlbtn" id="rightBtn">▶</button>
+      </div>
+      <button class="ctrlbtn" id="shopBtn">🛒</button>
+      <button id="shootBtn">ŠAUK!</button>
+    </div>
+
+    <div id="shopOverlay">
+      <div id="shopPanel">
+        <h2>🛒 NAIKINTUVŲ PARDUOTUVĖ</h2>
+        <div id="shopMoney">💰 Turi: 0 pinigų</div>
+        <div id="shopList"></div>
+        <button id="shopCloseBtn">Uždaryti ir žaisti</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const gameDiv = document.getElementById('game');
+
+  let W, H;
+  function resize(){
+    W = gameDiv.clientWidth;
+    H = gameDiv.clientHeight;
+    canvas.width = W;
+    canvas.height = H;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ---------- STATE ----------
+  const state = {
+    running: true,
+    won: false,
+    lost: false,
+    score: 0,
+    lives: 5,
+    time: 0
+  };
+
+  const scoreEl = document.getElementById('score');
+  const moneyEl = document.getElementById('money');
+  const levelInfoEl = document.getElementById('levelInfo');
+  const livesEl = document.getElementById('lives');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlaySub = document.getElementById('overlaySub');
+  const trophyEl = document.getElementById('trophy');
+  const bossbarInner = document.getElementById('bossbarInner');
+  const bossbarWrap = document.getElementById('bossbar');
+  const shopOverlay = document.getElementById('shopOverlay');
+  const shopMoneyEl = document.getElementById('shopMoney');
+  const shopListEl = document.getElementById('shopList');
+  const shopBtn = document.getElementById('shopBtn');
+  const shopCloseBtn = document.getElementById('shopCloseBtn');
+
+  // ---------- MONEY & NAIKINTUVO LYGIAI (persists across restarts) ----------
+  let money = 0;
+  let playerLevel = 0; // index into PLAYER_LEVELS, never resets on restart
+  let livesBought = 0; // how many extra lives purchased this run (resets each new campaign)
+  let moneyMultLevel = 0; // index into MONEY_MULT_LEVELS, never resets
+  let difficultyTier = 0; // increases every time all 20 levels are cleared, never resets
+  let shopOpen = false;
+
+  // Equipment unlocks (persist across restarts, one-time purchases)
+  let shieldUnlocked = false;
+  let superShotUnlocked = false;
+  const SHIELD_COST = 800;
+  const SUPER_COST = 1500;
+
+  // Runtime ability state (resets each new campaign)
+  let shieldActive = false;
+  let shieldTimer = 0;      // how long the shield stays up once activated
+  let shieldCooldown = 0;   // time until shield can be used again
+  const SHIELD_DURATION = 6;
+  const SHIELD_COOLDOWN_TIME = 22;
+
+  let superShotCooldown = 0;
+  const SUPER_COOLDOWN_TIME = 11;
+
+  // ---------- GARSO EFEKTAI (Web Audio API, be jokių failų) ----------
+  let audioCtx = null;
+  let soundEnabled = true;
+  function getAudioCtx(){
+    if(!audioCtx){
+      try{ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ return null; }
+    }
+    if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+    return audioCtx;
+  }
+  function beep(freq, duration, type, volume, freqEnd, delay){
+    if(!soundEnabled) return;
+    const ac = getAudioCtx();
+    if(!ac) return;
+    try{
+      const t0 = ac.currentTime + (delay||0);
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type || 'square';
+      osc.frequency.setValueAtTime(freq, t0);
+      if(freqEnd) osc.frequency.exponentialRampToValueAtTime(Math.max(30,freqEnd), t0+duration);
+      gain.gain.setValueAtTime(volume||0.15, t0);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0+duration);
+      osc.connect(gain); gain.connect(ac.destination);
+      osc.start(t0); osc.stop(t0+duration+0.02);
+    }catch(e){}
+  }
+
+  const soundBtn = document.getElementById('soundBtn');
+  soundBtn.addEventListener('click', ()=>{
+    soundEnabled = !soundEnabled;
+    soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+    soundBtn.classList.toggle('muted', !soundEnabled);
+    if(soundEnabled){ getAudioCtx(); }
+  });
+  function soundShoot(){ beep(760,0.06,'square',0.06,520); }
+  function soundSuperShot(){ beep(1200,0.22,'sawtooth',0.14,250); }
+  function soundExplosion(){ beep(220,0.18,'sawtooth',0.14,50); }
+  function soundBossExplosion(){ beep(180,0.4,'sawtooth',0.18,30); beep(90,0.5,'square',0.14,30,0.08); }
+  function soundPlayerHit(){ beep(140,0.3,'sawtooth',0.2,45); }
+  function soundShieldBlock(){ beep(700,0.18,'sine',0.16,1100); }
+  function soundShieldOn(){ beep(500,0.15,'sine',0.13,900); }
+  function soundBuy(){ beep(523,0.08,'square',0.1,660); beep(784,0.12,'square',0.1,880,0.09); }
+  function soundLevelUp(){ beep(523,0.1,'square',0.1,660); beep(659,0.1,'square',0.1,784,0.1); beep(784,0.16,'square',0.12,988,0.2); }
+  function soundWin(){ beep(523,0.14,'square',0.12,660,0); beep(659,0.14,'square',0.12,784,0.15); beep(784,0.14,'square',0.12,988,0.3); beep(988,0.35,'square',0.14,1180,0.45); }
+  function soundLose(){ beep(300,0.25,'sawtooth',0.16,150); beep(180,0.4,'sawtooth',0.16,60,0.2); }
+
+  // 20 naikintuvo lygiai - kaina ir galia auga su kiekvienu lygiu
+  const SHIP_NAMES = [
+    'Pradinis F16','Greitasis F16','Žaibo F16','Naikintuvas PRO','Galaktikos Sargas',
+    'Žvaigždžių Valdovas','Kosmoso Vanagas','Šviesos Greičio F16','Meteoro Medžiotojas','Juodosios Skylės Sargas',
+    'Supernovos Naikintuvas','Galaktikos Imperatorius','Žvaigždžių Griausmas','Visatos Valdovas','Kvantinis Naikintuvas',
+    'Antimaterijos F16','Dimensijų Perpjovėjas','Kosmoso Legenda','Begalybės Naikintuvas','ULTIMATE F16 OMEGA'
+  ];
+  const SHIP_COSTS   = [0,150,350,650,1000,1500,2200,3200,4500,6200,8500,11500,15500,20500,27000,35000,45000,58000,75000,100000];
+  const SHIP_BULLETS = [1,2,2,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,6,6];
+  const SHIP_COOLDOWN= [0.28,0.22,0.18,0.15,0.13,0.12,0.11,0.10,0.09,0.085,0.08,0.075,0.07,0.065,0.06,0.058,0.055,0.052,0.05,0.045];
+  const SHIP_SPEED   = [320,370,410,450,490,530,570,610,650,690,730,770,810,840,870,895,915,935,955,980];
+  const PLAYER_LEVELS = SHIP_NAMES.map((label,i)=>({
+    cost: SHIP_COSTS[i],
+    bullets: SHIP_BULLETS[i],
+    cooldown: SHIP_COOLDOWN[i],
+    speed: SHIP_SPEED[i],
+    label: label,
+    hull: `hsl(272, 78%, ${Math.min(82, 40+i*2.1)}%)`,
+    trim: `hsl(272, 55%, ${Math.min(97, 85+i*0.6)}%)`
+  }));
+
+  // Pinigų daugiklis - papildomas patobulinimas, didina uždirbamus pinigus už kiekvieną taikinį
+  const MONEY_MULT_LEVELS = [
+    { cost:0,    mult:1,   label:'Įprastas atlygis' },
+    { cost:500,  mult:1.5, label:'Pinigų Daugiklis I' },
+    { cost:1500, mult:2,   label:'Pinigų Daugiklis II' },
+    { cost:4000, mult:3,   label:'Pinigų Daugiklis III' }
+  ];
+
+  function applyPlayerLevel(){
+    player.speed = PLAYER_LEVELS[playerLevel].speed;
+  }
+
+  function updateMoneyHud(){
+    moneyEl.textContent = '💰 PINIGAI: ' + money;
+    shopMoneyEl.textContent = '💰 Turi: ' + money + ' pinigų';
+  }
+
+  function addPoints(n){
+    state.score += n;
+    money += Math.round(n * MONEY_MULT_LEVELS[moneyMultLevel].mult);
+    updateScoreHud();
+    updateMoneyHud();
+  }
+
+  function renderShop(){
+    shopMoneyEl.textContent = '💰 Turi: ' + money + ' pinigų';
+    shopListEl.innerHTML = '';
+
+    const sectionTitle1 = document.createElement('div');
+    sectionTitle1.className = 'shopSectionTitle';
+    sectionTitle1.textContent = '🚀 NAIKINTUVAI (' + (playerLevel+1) + ' / ' + PLAYER_LEVELS.length + ')';
+    shopListEl.appendChild(sectionTitle1);
+
+    for(let i=0;i<PLAYER_LEVELS.length;i++){
+      const lvl = PLAYER_LEVELS[i];
+      const owned = i <= playerLevel;
+      const isNext = i === playerLevel+1;
+      const canBuy = isNext && money >= lvl.cost;
+      const card = document.createElement('div');
+      card.className = 'shopCard' + (owned ? ' owned' : '');
+      let bottom = '';
+      if(owned){
+        bottom = '<div class="shopCardCost">✅ TURI ŠĮ NAIKINTUVĄ</div>';
+      } else if(isNext){
+        bottom = '<div class="shopCardCost">Kaina: 💰 ' + lvl.cost.toLocaleString('lt-LT') + '</div>' +
+          '<button class="shopBuyBtn" data-idx="'+i+'" '+(canBuy?'':'disabled')+'>PIRKTI</button>';
+      } else {
+        bottom = '<div class="shopCardCost">🔒 Užrakinta</div>';
+      }
+      card.innerHTML =
+        '<div class="shopCardTitle">'+(i+1)+'. '+lvl.label+'</div>' +
+        '<div class="shopCardDesc">🔫 '+lvl.bullets+' šūviai vienu metu &nbsp;•&nbsp; ⚡ greitis '+lvl.speed+'</div>' +
+        bottom;
+      shopListEl.appendChild(card);
+      if(isNext) card.id = 'nextShipCard';
+    }
+
+    const sectionTitle3 = document.createElement('div');
+    sectionTitle3.className = 'shopSectionTitle';
+    sectionTitle3.textContent = '✨ PINIGŲ DAUGIKLIS';
+    shopListEl.appendChild(sectionTitle3);
+
+    for(let i=1;i<MONEY_MULT_LEVELS.length;i++){
+      const mlvl = MONEY_MULT_LEVELS[i];
+      const owned = i <= moneyMultLevel;
+      const isNext = i === moneyMultLevel+1;
+      const canBuy = isNext && money >= mlvl.cost;
+      const card = document.createElement('div');
+      card.className = 'shopCard' + (owned ? ' owned' : '');
+      let bottom = '';
+      if(owned){
+        bottom = '<div class="shopCardCost">✅ AKTYVUS</div>';
+      } else if(isNext){
+        bottom = '<div class="shopCardCost">Kaina: 💰 ' + mlvl.cost.toLocaleString('lt-LT') + '</div>' +
+          '<button class="shopBuyBtn" data-mult="'+i+'" '+(canBuy?'':'disabled')+'>PIRKTI</button>';
+      } else {
+        bottom = '<div class="shopCardCost">🔒 Užrakinta</div>';
+      }
+      card.innerHTML =
+        '<div class="shopCardTitle">'+mlvl.label+' (x'+mlvl.mult+')</div>' +
+        '<div class="shopCardDesc">Kiekvienas nušautas ateivis duos '+mlvl.mult+'x daugiau pinigų</div>' +
+        bottom;
+      shopListEl.appendChild(card);
+    }
+
+    const sectionTitle4 = document.createElement('div');
+    sectionTitle4.className = 'shopSectionTitle';
+    sectionTitle4.textContent = '🛡️ ĮRANGA';
+    shopListEl.appendChild(sectionTitle4);
+
+    const shieldCard = document.createElement('div');
+    shieldCard.className = 'shopCard' + (shieldUnlocked ? ' owned' : '');
+    shieldCard.innerHTML =
+      '<div class="shopCardTitle">Energijos Skydas 🛡️</div>' +
+      '<div class="shopCardDesc">Mygtukas apsaugo nuo vieno smūgio, tada įkraunasi</div>' +
+      (shieldUnlocked
+        ? '<div class="shopCardCost">✅ ATRAKINTA</div>'
+        : '<div class="shopCardCost">Kaina: 💰 '+SHIELD_COST.toLocaleString('lt-LT')+'</div>' +
+          '<button class="shopBuyBtn" id="buyShieldBtn" '+(money>=SHIELD_COST?'':'disabled')+'>PIRKTI</button>');
+    shopListEl.appendChild(shieldCard);
+
+    const superCard = document.createElement('div');
+    superCard.className = 'shopCard' + (superShotUnlocked ? ' owned' : '');
+    superCard.innerHTML =
+      '<div class="shopCardTitle">Super Šūvis 💥</div>' +
+      '<div class="shopCardDesc">Galingas spindulys, kuris kiaurai perveria kelis ateivius iš karto</div>' +
+      (superShotUnlocked
+        ? '<div class="shopCardCost">✅ ATRAKINTA</div>'
+        : '<div class="shopCardCost">Kaina: 💰 '+SUPER_COST.toLocaleString('lt-LT')+'</div>' +
+          '<button class="shopBuyBtn" id="buySuperBtn" '+(money>=SUPER_COST?'':'disabled')+'>PIRKTI</button>');
+    shopListEl.appendChild(superCard);
+
+    const sectionTitle2 = document.createElement('div');
+    sectionTitle2.className = 'shopSectionTitle';
+    sectionTitle2.textContent = '❤️ GYVYBĖS';
+    shopListEl.appendChild(sectionTitle2);
+
+    const lifeCost = extraLifeCost();
+    const lifeCard = document.createElement('div');
+    lifeCard.className = 'shopCard';
+    lifeCard.innerHTML =
+      '<div class="shopCardTitle">Papildoma gyvybė</div>' +
+      '<div class="shopCardDesc">+1 ❤️ prie dabartinių gyvybių</div>' +
+      '<div class="shopCardCost">Kaina: 💰 '+lifeCost+'</div>' +
+      '<button class="shopBuyBtn" id="buyLifeBtn" '+(money>=lifeCost?'':'disabled')+'>PIRKTI</button>';
+    shopListEl.appendChild(lifeCard);
+
+    shopListEl.querySelectorAll('.shopBuyBtn[data-idx]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        buyUpgrade(parseInt(btn.dataset.idx,10));
+      });
+    });
+    shopListEl.querySelectorAll('.shopBuyBtn[data-mult]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        buyMoneyMult(parseInt(btn.dataset.mult,10));
+      });
+    });
+    const buyLifeBtn = document.getElementById('buyLifeBtn');
+    if(buyLifeBtn){
+      buyLifeBtn.addEventListener('click', buyExtraLife);
+    }
+    const buyShieldBtn = document.getElementById('buyShieldBtn');
+    if(buyShieldBtn){
+      buyShieldBtn.addEventListener('click', buyShield);
+    }
+    const buySuperBtn = document.getElementById('buySuperBtn');
+    if(buySuperBtn){
+      buySuperBtn.addEventListener('click', buySuperShot);
+    }
+  }
+
+  function extraLifeCost(){
+    return 120 + livesBought*80;
+  }
+
+  function buyExtraLife(){
+    const cost = extraLifeCost();
+    if(money >= cost){
+      money -= cost;
+      livesBought += 1;
+      state.lives += 1;
+      soundBuy();
+      updateLivesHud();
+      updateMoneyHud();
+      renderShop();
+    }
+  }
+
+  function buyShield(){
+    if(shieldUnlocked || money < SHIELD_COST) return;
+    money -= SHIELD_COST;
+    shieldUnlocked = true;
+    soundBuy();
+    updateMoneyHud();
+    updateAbilityButtons();
+    renderShop();
+  }
+
+  function buySuperShot(){
+    if(superShotUnlocked || money < SUPER_COST) return;
+    money -= SUPER_COST;
+    superShotUnlocked = true;
+    soundBuy();
+    updateMoneyHud();
+    updateAbilityButtons();
+    renderShop();
+  }
+
+  function buyUpgrade(idx){
+    if(idx !== playerLevel+1) return;
+    const lvl = PLAYER_LEVELS[idx];
+    if(money >= lvl.cost){
+      money -= lvl.cost;
+      playerLevel = idx;
+      applyPlayerLevel();
+      soundBuy();
+      updateMoneyHud();
+      renderShop();
+    }
+  }
+
+  function buyMoneyMult(idx){
+    if(idx !== moneyMultLevel+1) return;
+    const mlvl = MONEY_MULT_LEVELS[idx];
+    if(money >= mlvl.cost){
+      money -= mlvl.cost;
+      moneyMultLevel = idx;
+      soundBuy();
+      updateMoneyHud();
+      renderShop();
+    }
+  }
+
+  shopBtn.addEventListener('click', ()=>{
+    shopOpen = true;
+    shopOverlay.style.display = 'flex';
+    renderShop();
+    const nextCard = document.getElementById('nextShipCard');
+    if(nextCard) nextCard.scrollIntoView({block:'center'});
+  });
+  shopCloseBtn.addEventListener('click', ()=>{
+    shopOpen = false;
+    shopOverlay.style.display = 'none';
+  });
+
+  // ---------- BACKGROUND: stars & planets ----------
+  let stars = [];
+  let planets = [];
+  function initBackground(){
+    stars = [];
+    for(let i=0;i<90;i++){
+      stars.push({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        r: Math.random()*1.6+0.4,
+        phase: Math.random()*Math.PI*2,
+        speed: 0.4+Math.random()*1.2
+      });
+    }
+    planets = [
+      {x:W*0.82,y:H*0.14,r:34,color:'#5b3aa0',ring:true, craterColor:'#3d2470'},
+      {x:W*0.15,y:H*0.28,r:16,color:'#c96a4a',ring:false, craterColor:'#8a4530'},
+      {x:W*0.5,y:H*0.08,r:10,color:'#e8e8f0',ring:false, craterColor:'#b6b6c4'}
+    ];
+  }
+  initBackground();
+
+  function drawBackground(dt){
+    // deep space gradient
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#050014');
+    g.addColorStop(0.6,'#0a0322');
+    g.addColorStop(1,'#03000a');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+
+    // planets (distant)
+    for(const p of planets){
+      if(p.ring){
+        ctx.save();
+        ctx.translate(p.x,p.y);
+        ctx.rotate(-0.3);
+        ctx.strokeStyle = 'rgba(200,170,255,0.5)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(0,0,p.r*1.7,p.r*0.55,0,0,Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      const pg = ctx.createRadialGradient(p.x-p.r*0.3,p.y-p.r*0.3,p.r*0.1,p.x,p.y,p.r);
+      pg.addColorStop(0, p.color);
+      pg.addColorStop(1, p.craterColor);
+      ctx.fillStyle = pg;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fill();
+    }
+
+    // twinkling stars
+    for(const s of stars){
+      const tw = 0.5 + 0.5*Math.sin(state.time*s.speed + s.phase);
+      ctx.fillStyle = `rgba(255,255,255,${0.35+0.65*tw})`;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fill();
+      s.y += 0.15;
+      if(s.y > H) s.y = 0;
+    }
+  }
+
+  // ---------- PLAYER (purple F16) ----------
+  const player = {
+    w: 54, h: 46,
+    x: 0, y: 0,
+    speed: 320,
+    vx: 0,
+    cooldown: 0,
+    hitFlash: 0
+  };
+  function resetPlayer(){
+    player.x = W/2 - player.w/2;
+    player.y = H - player.h - 90;
+  }
+  resetPlayer();
+  applyPlayerLevel();
+
+  function drawPlayer(){
+    ctx.save();
+    ctx.translate(player.x + player.w/2, player.y + player.h/2);
+
+    if(player.hitFlash > 0){
+      ctx.globalAlpha = 0.5 + 0.5*Math.sin(state.time*40);
+    }
+
+    // engine glow
+    const glow = ctx.createRadialGradient(0, player.h*0.55, 2, 0, player.h*0.55, 18);
+    glow.addColorStop(0,'rgba(180,120,255,0.9)');
+    glow.addColorStop(1,'rgba(180,120,255,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, player.h*0.55, 18, 0, Math.PI*2);
+    ctx.fill();
+
+    // body (F16-ish silhouette) - violet, tone depends on upgrade level
+    const lvlTone = PLAYER_LEVELS[playerLevel];
+    ctx.fillStyle = lvlTone.hull;
+    ctx.strokeStyle = lvlTone.trim;
+    ctx.lineWidth = 1.5;
+
+    ctx.beginPath();
+    ctx.moveTo(0, -player.h/2);          // nose
+    ctx.lineTo(6, -6);
+    ctx.lineTo(26, player.h*0.28);       // right wingtip
+    ctx.lineTo(10, player.h*0.20);
+    ctx.lineTo(10, player.h/2 - 2);      // right tail
+    ctx.lineTo(4, player.h/2 - 8);
+    ctx.lineTo(0, player.h/2);
+    ctx.lineTo(-4, player.h/2 - 8);
+    ctx.lineTo(-10, player.h/2 - 2);     // left tail
+    ctx.lineTo(-10, player.h*0.20);
+    ctx.lineTo(-26, player.h*0.28);      // left wingtip
+    ctx.lineTo(-6, -6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // cockpit
+    ctx.fillStyle = lvlTone.trim;
+    ctx.beginPath();
+    ctx.ellipse(0, -player.h*0.08, 4.5, 9, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+
+    if(shieldActive){
+      ctx.save();
+      const pulse = 0.7 + 0.3*Math.sin(state.time*10);
+      const hue = shieldHue();
+      ctx.translate(player.x + player.w/2, player.y + player.h/2);
+      ctx.strokeStyle = `hsla(${hue}, 90%, 68%, ${0.65*pulse})`;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = `hsl(${hue}, 90%, 65%)`;
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      ctx.arc(0, 0, player.w*0.68, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Skydo spalva keičiasi priklausomai nuo naikintuvo lygio (sukasi per spalvų ratą)
+  function shieldHue(){
+    return (195 + playerLevel*9) % 360;
+  }
+
+  // ---------- BULLETS ----------
+  let playerBullets = [];
+  let alienBullets = [];
+
+  function shoot(){
+    if(state.running === false || shopOpen) return;
+    if(player.cooldown > 0) return;
+    const lvl = PLAYER_LEVELS[playerLevel];
+    const n = lvl.bullets;
+    const spread = 14;
+    for(let i=0;i<n;i++){
+      const offset = (i - (n-1)/2) * spread;
+      playerBullets.push({
+        x: player.x + player.w/2 - 2.5 + offset,
+        y: player.y,
+        w: 5, h: 16,
+        speed: 480
+      });
+    }
+    player.cooldown = lvl.cooldown;
+    soundShoot();
+  }
+
+  function activateShield(){
+    if(!shieldUnlocked || shopOpen || state.running === false) return;
+    if(shieldActive || shieldCooldown > 0) return;
+    shieldActive = true;
+    shieldTimer = SHIELD_DURATION;
+    soundShieldOn();
+  }
+
+  function fireSuperShot(){
+    if(!superShotUnlocked || shopOpen || state.running === false) return;
+    if(superShotCooldown > 0) return;
+    playerBullets.push({
+      x: player.x + player.w/2 - 14,
+      y: player.y - 6,
+      w: 28, h: 36,
+      speed: 560,
+      pierce: true,
+      hitSet: new Set(),
+      hitBoss: false
+    });
+    superShotCooldown = SUPER_COOLDOWN_TIME;
+    soundSuperShot();
+  }
+
+  const shieldBtn = document.getElementById('shieldBtn');
+  const superBtn = document.getElementById('superBtn');
+
+  function updateAbilityButtons(){
+    shieldBtn.style.display = shieldUnlocked ? 'flex' : 'none';
+    superBtn.style.display = superShotUnlocked ? 'flex' : 'none';
+
+    if(shieldUnlocked){
+      const hue = shieldHue();
+      shieldBtn.style.borderColor = `hsl(${hue}, 90%, 70%)`;
+      shieldBtn.style.boxShadow = `0 0 14px hsla(${hue}, 90%, 65%, 0.7)`;
+      shieldBtn.style.background = `radial-gradient(circle at 35% 30%, hsl(${hue},70%,32%), hsl(${hue},70%,12%))`;
+      if(shieldActive){
+        shieldBtn.disabled = true;
+        shieldBtn.textContent = '🛡️';
+      } else if(shieldCooldown > 0){
+        shieldBtn.disabled = true;
+        shieldBtn.textContent = Math.ceil(shieldCooldown);
+      } else {
+        shieldBtn.disabled = false;
+        shieldBtn.textContent = '🛡️';
+      }
+    }
+    if(superShotUnlocked){
+      if(superShotCooldown > 0){
+        superBtn.disabled = true;
+        superBtn.textContent = Math.ceil(superShotCooldown);
+      } else {
+        superBtn.disabled = false;
+        superBtn.textContent = '💥';
+      }
+    }
+  }
+
+  shieldBtn.addEventListener('touchstart', e=>{ e.preventDefault(); activateShield(); }, {passive:false});
+  shieldBtn.addEventListener('mousedown', e=>{ e.preventDefault(); activateShield(); });
+  superBtn.addEventListener('touchstart', e=>{ e.preventDefault(); fireSuperShot(); }, {passive:false});
+  superBtn.addEventListener('mousedown', e=>{ e.preventDefault(); fireSuperShot(); });
+
+  // ---------- ALIENS ----------
+  let aliens = [];
+  let alienDir = 1;
+  let alienSpeed = 40;
+  let alienShootTimer = 0;
+
+  let boss = null;
+
+  // ---------- 20 LEVEL LADDER ----------
+  // Phase 1: 3 per row, 1..5 rows. Phase 2: 4 per row, 1..5 rows.
+  // Phase 3: 5 per row, 1..5 rows. Phase 4: 6 per row, 1..5 rows.
+  const LEVELS = [];
+  for(const cols of [3,4,5,6]){
+    for(let rows=1; rows<=5; rows++){
+      LEVELS.push({cols, rows});
+    }
+  }
+  let currentLevelIndex = 0;
+  let levelBanner = { text:'', timer:0 };
+
+  function updateLevelHud(){
+    levelInfoEl.textContent = 'LYGIS ' + (currentLevelIndex+1) + ' / ' + LEVELS.length + '  •  SUNKUMAS ' + (difficultyTier+1);
+  }
+
+  function showLevelBanner(text){
+    levelBanner.text = text;
+    levelBanner.timer = 1.8;
+  }
+
+  function initAliens(levelIdx){
+    const def = LEVELS[levelIdx];
+    aliens = [];
+    const marginTop = 90;
+    const spacingX = W / (def.cols+1);
+    const spacingY = 40;
+    const r = Math.max(9, Math.min(15, spacingX*0.42));
+    for(let row=0; row<def.rows; row++){
+      for(let c=0; c<def.cols; c++){
+        aliens.push({
+          x: spacingX*(c+1),
+          baseX: spacingX*(c+1),
+          y: marginTop + row*spacingY,
+          r: r,
+          alive: true,
+          row: row,
+          phase: Math.random()*Math.PI*2
+        });
+      }
+    }
+    const bossHp = Math.min(30, 5 + Math.floor(levelIdx/2) + difficultyTier*4);
+    boss = {
+      x: W/2,
+      baseX: W/2,
+      y: 44,
+      r: 30,
+      hp: bossHp,
+      maxHp: bossHp,
+      alive: true,
+      phase: 0
+    };
+    alienSpeed = 40 + levelIdx*3 + difficultyTier*18;
+    alienShootTimer = 1;
+    updateLevelHud();
+    updateBossBar();
+  }
+  initAliens(currentLevelIndex);
+
+  function advanceLevel(){
+    currentLevelIndex++;
+    if(currentLevelIndex >= LEVELS.length){
+      endGame(true);
+      return;
+    }
+    playerBullets = [];
+    alienBullets = [];
+    initAliens(currentLevelIndex);
+    showLevelBanner('LYGIS ' + (currentLevelIndex+1));
+    soundLevelUp();
+  }
+
+  function drawAlienShape(x,y,r,tone){
+    // purple ufo/alien
+    ctx.save();
+    ctx.translate(x,y);
+
+    // saucer body
+    const g = ctx.createLinearGradient(-r,0,r,0);
+    g.addColorStop(0, tone.dark);
+    g.addColorStop(0.5, tone.light);
+    g.addColorStop(1, tone.dark);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.ellipse(0, r*0.15, r, r*0.55, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // dome
+    ctx.fillStyle = tone.dome;
+    ctx.beginPath();
+    ctx.arc(0, -r*0.15, r*0.55, Math.PI, 0);
+    ctx.fill();
+
+    // dome glass shine
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.arc(-r*0.15, -r*0.28, r*0.16, 0, Math.PI*2);
+    ctx.fill();
+
+    // lights
+    ctx.fillStyle = '#ffe27a';
+    for(let i=-1;i<=1;i++){
+      ctx.beginPath();
+      ctx.arc(i*r*0.5, r*0.2, r*0.09, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  function drawAliens(){
+    const tone = { dark:'#5b1a9e', light:'#a855f7', dome:'#d9b8ff' };
+    for(const a of aliens){
+      if(!a.alive) continue;
+      drawAlienShape(a.x, a.y, a.r, tone);
+    }
+    if(boss && boss.alive){
+      const bossTone = { dark:'#4a0f80', light:'#c084fc', dome:'#e9d5ff' };
+      drawAlienShape(boss.x, boss.y, boss.r, bossTone);
+    }
+  }
+
+  function anyAliensLeft(){
+    return aliens.some(a=>a.alive) || (boss && boss.alive);
+  }
+
+  function updateAliens(dt){
+    // gentle group sway + individual bob
+    let hitEdge = false;
+    for(const a of aliens){
+      if(!a.alive) continue;
+      a.x = a.baseX + Math.sin(state.time*0.6)*40*alienDir;
+    }
+    if(boss && boss.alive){
+      boss.x = boss.baseX + Math.sin(state.time*0.5)*26;
+    }
+
+    // slowly drift baseX to sweep the whole formation
+    const sweep = Math.sin(state.time*0.35) * (W*0.28);
+    for(const a of aliens){
+      if(!a.alive) continue;
+    }
+
+    // alien shooting (boss never shoots)
+    alienShootTimer -= dt;
+    if(alienShootTimer <= 0){
+      const shooters = aliens.filter(a=>a.alive);
+      if(shooters.length>0){
+        const shooter = shooters[Math.floor(Math.random()*shooters.length)];
+        alienBullets.push({
+          x: shooter.x-3,
+          y: shooter.y+shooter.r*0.5,
+          w:6, h:14,
+          speed: 150 + Math.random()*80
+        });
+      }
+      alienShootTimer = Math.max(0.32, 0.85 - currentLevelIndex*0.015 - difficultyTier*0.08) + Math.random()*Math.max(0.4, 0.9 - currentLevelIndex*0.015 - difficultyTier*0.08);
+    }
+  }
+
+  // recompute baseX with a slow global sweep so aliens as a group move across screen
+  function updateAlienFormation(dt){
+    const margin = 40;
+    const sweepSpeed = alienSpeed;
+    boss._dir = boss._dir || 1;
+    // move whole formation left/right using alienDir, bounce at edges
+    let minX = Infinity, maxX = -Infinity;
+    for(const a of aliens){
+      if(!a.alive) continue;
+      minX = Math.min(minX, a.baseX);
+      maxX = Math.max(maxX, a.baseX);
+    }
+    if(minX===Infinity){ minX=W/2; maxX=W/2; }
+    if(maxX + 30 > W - margin || minX - 30 < margin){
+      alienDir *= -1;
+    }
+    for(const a of aliens){
+      a.baseX += alienDir * sweepSpeed * dt * 0.02;
+    }
+  }
+
+  // ---------- COLLISIONS ----------
+  function circleRectHit(cx,cy,cr, rx,ry,rw,rh){
+    const closestX = Math.max(rx, Math.min(cx, rx+rw));
+    const closestY = Math.max(ry, Math.min(cy, ry+rh));
+    const dx = cx-closestX, dy = cy-closestY;
+    return (dx*dx+dy*dy) < cr*cr;
+  }
+
+  function updateBullets(dt){
+    for(let i=playerBullets.length-1;i>=0;i--){
+      const b = playerBullets[i];
+      b.y -= b.speed*dt;
+      if(b.y+b.h < 0){ playerBullets.splice(i,1); continue; }
+
+      let hit = false;
+      for(const a of aliens){
+        if(!a.alive) continue;
+        if(b.pierce && b.hitSet.has(a)) continue;
+        if(circleRectHit(a.x,a.y,a.r, b.x,b.y,b.w,b.h)){
+          a.alive = false;
+          addPoints(10);
+          soundExplosion();
+          if(b.pierce){ b.hitSet.add(a); } else { hit = true; break; }
+        }
+      }
+      if((!hit || b.pierce) && boss && boss.alive && !(b.pierce && b.hitBoss)){
+        if(circleRectHit(boss.x,boss.y,boss.r, b.x,b.y,b.w,b.h)){
+          const dmg = b.pierce ? 3 : 1;
+          boss.hp -= dmg;
+          if(b.pierce){ b.hitBoss = true; } else { hit = true; }
+          if(boss.hp<=0){
+            boss.alive = false;
+            addPoints(100);
+            soundBossExplosion();
+          } else {
+            addPoints(b.pierce ? 15 : 5);
+            soundExplosion();
+          }
+        }
+      }
+      if(hit && !b.pierce) playerBullets.splice(i,1);
+    }
+
+    for(let i=alienBullets.length-1;i>=0;i--){
+      const b = alienBullets[i];
+      b.y += b.speed*dt;
+      if(b.y > H){ alienBullets.splice(i,1); continue; }
+
+      if(b.x+b.w > player.x && b.x < player.x+player.w &&
+         b.y+b.h > player.y && b.y < player.y+player.h){
+        alienBullets.splice(i,1);
+        if(shieldActive){
+          shieldActive = false;
+          shieldCooldown = SHIELD_COOLDOWN_TIME;
+          soundShieldBlock();
+        } else {
+          loseLife();
+        }
+      }
+    }
+  }
+
+  function drawBullets(){
+    for(const b of playerBullets){
+      ctx.save();
+      if(b.pierce){
+        ctx.fillStyle = '#ffcf5c';
+        ctx.shadowColor = '#ff9a3d';
+        ctx.shadowBlur = 16;
+      } else {
+        ctx.fillStyle = '#7ef9ff';
+        ctx.shadowColor = '#7ef9ff';
+        ctx.shadowBlur = 8;
+      }
+      ctx.fillRect(b.x,b.y,b.w,b.h);
+      ctx.restore();
+    }
+    for(const b of alienBullets){
+      ctx.save();
+      ctx.fillStyle = '#ff5b8a';
+      ctx.shadowColor = '#ff5b8a';
+      ctx.shadowBlur = 8;
+      ctx.fillRect(b.x,b.y,b.w,b.h);
+      ctx.restore();
+    }
+  }
+
+  // ---------- LIVES / GAME OVER / WIN ----------
+  function updateLivesHud(){
+    livesEl.textContent = '❤️'.repeat(Math.max(state.lives,0)) + '🖤'.repeat(Math.max(5-state.lives,0));
+  }
+  function updateScoreHud(){
+    scoreEl.textContent = 'TAŠKAI: ' + state.score;
+  }
+  function updateBossBar(){
+    if(!boss || !boss.alive){
+      bossbarWrap.style.display = 'none';
+      return;
+    }
+    bossbarWrap.style.display = 'block';
+    bossbarInner.style.width = Math.max(0,(boss.hp/boss.maxHp)*100) + '%';
+  }
+
+  function loseLife(){
+    if(!state.running) return;
+    state.lives -= 1;
+    player.hitFlash = 0.4;
+    soundPlayerHit();
+    updateLivesHud();
+    if(state.lives <= 0){
+      endGame(false);
+    }
+  }
+
+  function endGame(won){
+    state.running = false;
+    state.won = won;
+    overlay.style.display = 'flex';
+    if(won){
+      difficultyTier += 1;
+      overlayTitle.textContent = 'YOU WIN!';
+      overlayTitle.className = 'win-title';
+      overlaySub.textContent = 'NEPATIKĖTINA! Įveikei visus 20 lygių ir apgynei galaktiką! 🌌 Kitą kartą priešai bus dar greitesni (SUNKUMAS ' + (difficultyTier+1) + ') — žaisk dar kartą su savo naikintuvu ir sukauptais pinigais!';
+      trophyEl.style.display = 'block';
+      soundWin();
+    } else {
+      overlayTitle.innerHTML = 'GAME OVER<br><span style="font-size:24px;">...you lost</span>';
+      overlayTitle.className = 'lose-title';
+      overlaySub.textContent = 'Nenusimink! Paspausk mygtuką ir bandyk dar kartą.';
+      trophyEl.style.display = 'none';
+      soundLose();
+    }
+  }
+
+  function resetGame(){
+    // NOTE: money, playerLevel, moneyMultLevel, difficultyTier, shieldUnlocked and superShotUnlocked are intentionally NOT reset - they persist!
+    state.running = true;
+    state.won = false;
+    state.lost = false;
+    state.score = 0;
+    state.lives = 5;
+    livesBought = 0;
+    currentLevelIndex = 0;
+    player.hitFlash = 0;
+    playerBullets = [];
+    alienBullets = [];
+    shieldActive = false;
+    shieldTimer = 0;
+    shieldCooldown = 0;
+    superShotCooldown = 0;
+    resetPlayer();
+    applyPlayerLevel();
+    initAliens(currentLevelIndex);
+    overlay.style.display = 'none';
+    updateLivesHud();
+    updateScoreHud();
+    updateMoneyHud();
+    updateBossBar();
+    updateLevelHud();
+    updateAbilityButtons();
+  }
+
+  // ---------- INPUT ----------
+  let keys = {};
+  window.addEventListener('keydown', e=>{
+    keys[e.key] = true;
+    if(e.key === ' ') { shoot(); e.preventDefault(); }
+  });
+  window.addEventListener('keyup', e=>{ keys[e.key] = false; });
+
+  function bindHold(el, onDown, onUp){
+    el.addEventListener('touchstart', e=>{ e.preventDefault(); onDown(); }, {passive:false});
+    el.addEventListener('touchend', e=>{ e.preventDefault(); onUp(); }, {passive:false});
+    el.addEventListener('mousedown', e=>{ e.preventDefault(); onDown(); });
+    el.addEventListener('mouseup', e=>{ e.preventDefault(); onUp(); });
+    el.addEventListener('mouseleave', ()=>{ onUp(); });
+  }
+
+  const leftBtn = document.getElementById('leftBtn');
+  const rightBtn = document.getElementById('rightBtn');
+  const shootBtn = document.getElementById('shootBtn');
+
+  let holdLeft=false, holdRight=false;
+  bindHold(leftBtn, ()=>holdLeft=true, ()=>holdLeft=false);
+  bindHold(rightBtn, ()=>holdRight=true, ()=>holdRight=false);
+
+  shootBtn.addEventListener('touchstart', e=>{ e.preventDefault(); shoot(); }, {passive:false});
+  shootBtn.addEventListener('mousedown', e=>{ e.preventDefault(); shoot(); });
+
+  document.getElementById('restartBtn').addEventListener('click', resetGame);
+
+  // ---------- MAIN LOOP ----------
+  let lastT = performance.now();
+  function loop(now){
+    const dt = Math.min((now-lastT)/1000, 0.05);
+    lastT = now;
+    state.time += dt;
+
+    ctx.clearRect(0,0,W,H);
+    drawBackground(dt);
+
+    if(state.running && !shopOpen){
+      // player movement
+      let dir = 0;
+      if(keys['ArrowLeft'] || holdLeft) dir -= 1;
+      if(keys['ArrowRight'] || holdRight) dir += 1;
+      player.x += dir * player.speed * dt;
+      player.x = Math.max(6, Math.min(W - player.w - 6, player.x));
+
+      if(player.cooldown>0) player.cooldown -= dt;
+      if(player.hitFlash>0) player.hitFlash -= dt;
+
+      if(shieldActive){
+        shieldTimer -= dt;
+        if(shieldTimer <= 0){
+          shieldActive = false;
+          shieldCooldown = SHIELD_COOLDOWN_TIME;
+        }
+      }
+      if(shieldCooldown > 0) shieldCooldown -= dt;
+      if(superShotCooldown > 0) superShotCooldown -= dt;
+      updateAbilityButtons();
+
+      updateAlienFormation(dt);
+      updateAliens(dt);
+      updateBullets(dt);
+
+      updateScoreHud();
+      updateBossBar();
+
+      if(!anyAliensLeft()){
+        advanceLevel();
+      }
+    }
+
+    drawAliens();
+    drawBullets();
+    drawPlayer();
+
+    if(levelBanner.timer > 0){
+      levelBanner.timer -= dt;
+      const a = Math.min(1, levelBanner.timer);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#7ef9ff';
+      ctx.shadowColor = '#7ef9ff';
+      ctx.shadowBlur = 16;
+      ctx.font = 'bold 30px Trebuchet MS, sans-serif';
+      ctx.fillText(levelBanner.text, W/2, H*0.4);
+      ctx.restore();
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  updateLivesHud();
+  updateScoreHud();
+  updateMoneyHud();
+  updateBossBar();
+  updateLevelHud();
+  updateAbilityButtons();
+  requestAnimationFrame(loop);
+
+})();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    });
+  }
+</script>
+</body>
+</html>

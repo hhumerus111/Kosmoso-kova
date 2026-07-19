@@ -1,0 +1,15 @@
+{
+  "name": "Kosmoso Kova - F16 prieš Ateivius",
+  "short_name": "Kosmoso Kova",
+  "description": "Kosminis šaudymo žaidimas violetiniu F16 naikintuvu prieš ateivius, Star Wars stiliumi.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#03000a",
+  "theme_color": "#0a0322",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

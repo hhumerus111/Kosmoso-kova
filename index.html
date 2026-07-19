@@ -2,7 +2,7 @@
 <html lang="lt">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Kosmoso Kova - F16 prieš Ateivius</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0322">
@@ -22,7 +22,10 @@
   }
   #wrap {
     position:relative;
-    width:100vw; height:100vh;
+    width:100vw;
+    height:100vh;
+    height:calc(var(--app-height, 100vh));
+    height:100dvh;
     display:flex; align-items:center; justify-content:center;
   }
   #game {
@@ -117,7 +120,7 @@
   #controls {
     position:absolute; bottom:0; left:0; right:0;
     display:flex; align-items:center; justify-content:space-between;
-    padding:18px 20px 26px;
+    padding:18px 20px calc(26px + env(safe-area-inset-bottom, 0px));
     z-index:10;
   }
   .movebtns { display:flex; gap:14px; }
@@ -157,7 +160,7 @@
 
   #abilityRow {
     position:absolute;
-    bottom:112px;
+    bottom:calc(112px + env(safe-area-inset-bottom, 0px));
     left:0; right:0;
     display:flex;
     justify-content:center;
@@ -360,6 +363,22 @@
   const gameDiv = document.getElementById('game');
 
   let W, H;
+
+  // Mobilioje naršyklėje 100vh dažnai apima sritį po adreso juosta, todėl
+  // apatiniai valdymo mygtukai gali atsidurti už matomo ekrano ribų.
+  // Čia nustatome tikslų aukštį pagal realų matomą langą (visualViewport, jei yra).
+  function setAppHeight(){
+    const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', h + 'px');
+    resize();
+  }
+  setAppHeight();
+  window.addEventListener('resize', setAppHeight);
+  window.addEventListener('orientationchange', setAppHeight);
+  if(window.visualViewport){
+    window.visualViewport.addEventListener('resize', setAppHeight);
+  }
+
   function resize(){
     W = gameDiv.clientWidth;
     H = gameDiv.clientHeight;
